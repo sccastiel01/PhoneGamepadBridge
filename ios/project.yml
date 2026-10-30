@@ -1,0 +1,50 @@
+# XcodeGen spec. CI runs `xcodegen generate` to produce GamepadRelay.xcodeproj
+# from this file, so no .xcodeproj is committed and none has to be created by
+# hand on a Mac. Edit this rather than the generated project.
+#
+#   https://github.com/yonaskolb/XcodeGen
+
+name: GamepadRelay
+
+options:
+  bundleIdPrefix: com.local
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "16.0"
+
+targets:
+  GamepadRelay:
+    type: application
+    platform: iOS
+
+    sources:
+      - path: GamepadRelay
+
+    info:
+      path: GamepadRelay/Info.plist
+
+    settings:
+      base:
+        PRODUCT_NAME: GamepadRelay
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.gamepadrelay
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_FILE: GamepadRelay/Info.plist
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"          # iPhone only
+        SWIFT_STRICT_CONCURRENCY: minimal    # See README: the engine predates
+                                             # Swift 6 isolation checking.
+        # Sideloadly re-signs the bundle itself, so CI builds unsigned.
+        CODE_SIGN_IDENTITY: ""
+        CODE_SIGNING_REQUIRED: "NO"
+        CODE_SIGNING_ALLOWED: "NO"
+
+schemes:
+  GamepadRelay:
+    build:
+      targets:
+        GamepadRelay: all
+    run:
+      config: Debug
+    archive:
+      config: Release

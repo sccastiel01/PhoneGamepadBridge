@@ -1,0 +1,65 @@
+name: Build unsigned IPA
+
+# Produces an unsigned GamepadRelay.ipa as a downloadable artifact. Sideloadly
+# on Windows signs it with your Apple ID at install time, so no certificates,
+# provisioning profiles, or repository secrets are needed here.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build (unsigned)
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project GamepadRelay.xcodeproj \
+            -scheme GamepadRelay \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            build
+
+      - name: Package .ipa
+        working-directory: ios
+        run: |
+          APP="build/Build/Products/Release-iphoneos/GamepadRelay.app"
+          test -d "$APP" || { echo "::error::$APP not found"; exit 1; }
+          # An .ipa is just a zip with the bundle under a top-level Payload/.
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry GamepadRelay.ipa Payload
+          ls -lh GamepadRelay.ipa
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GamepadRelay-ipa
+          path: ios/GamepadRelay.ipa
+          if-no-files-found: error
+          retention-days: 30
